@@ -1,1 +1,119 @@
+version: "3.8"
 
+services:
+  postgres_db:
+    container_name: onboarding
+    image: postgres:14.11-alpine
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: pass
+      POSTGRES_USER: switch
+      POSTGRES_DB: customerDb
+    networks:
+      - fintech-network
+    ports:
+      - "5455:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
+  onboarding:
+    container_name: onboarding-service
+    build:
+      context: ./onboarding-service
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/customerDb
+      SPRING_DATASOURCE_USERNAME: switch
+      SPRING_DATASOURCE_PASSWORD: pass
+    ports:
+      - "8090:8090"
+    depends_on:
+      - postgres_db
+    networks:
+      - fintech-network
+    restart: on-failure
+
+  authServer:
+    container_name: auth-server
+    build:
+      context: ./auth-server
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/customerDb
+      SPRING_DATASOURCE_USERNAME: switch
+      SPRING_DATASOURCE_PASSWORD: pass
+    ports:
+      - "8094:8094"
+    depends_on:
+      - postgres_db
+    networks:
+      - fintech-network
+    restart: on-failure
+
+  config-server:
+    container_name: config-server
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: classpath:/shared
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_DEFAULT_LABEL: main
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_VERSION: 1.0
+    ports:
+      - "8888:8888"
+    networks:
+      - fintech-network
+    restart: always
+
+  api-gateway:
+    container_name: api-gateway
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+    ports:
+      - "8222:8222"
+    depends_on:
+      - config-server
+      - discovery-server
+    networks:
+      - fintech-network
+    restart: always
+
+
+  billing-service:
+      container_name: billing-service
+      build:
+        context: ./billing-service
+        dockerfile: Dockerfile
+      environment:
+        SPRING_PROFILES_ACTIVE: dev
+        SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      ports:
+        - "8095:8095"
+      networks:
+        - fintech-network
+      restart: on-failure
+
+  discovery-server:
+    container_name: discovery-server
+    build:
+      context: ./discovery-service
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+    ports:
+      - "8761:8761"
+    networks:
+      - fintech-network
+    restart: always
+
+volumes:
+  dbdata:
+
+networks:
+  fintech-network:
