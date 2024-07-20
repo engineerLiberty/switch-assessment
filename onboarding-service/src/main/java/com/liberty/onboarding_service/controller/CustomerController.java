@@ -34,9 +34,4 @@ public class CustomerController {
         return customerService.getDashBoardDetails(customerId);
     }
 
-//    @GetMapping("/getBanks")
-//    @ResponseStatus(HttpStatus.OK)
-//    public ApiResponse<?> getBanks() {
-//        return customerService.getDashBoardDetails(customerId);
-//    }
 }

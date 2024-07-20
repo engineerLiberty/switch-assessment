@@ -1,11 +1,12 @@
 package com.liberty.billing_service.controller;
 
+import com.liberty.billing_service.dto.ApiResponse;
 import com.liberty.billing_service.dto.TransferDto;
-import com.liberty.billing_service.model.BillCategory;
-import com.liberty.billing_service.model.Biller;
-import com.liberty.billing_service.model.Payment;
-import com.liberty.billing_service.model.Product;
+import com.liberty.billing_service.dto.TransferRequest;
+import com.liberty.billing_service.model.*;
+import com.liberty.billing_service.repository.TransferRepository;
 import com.liberty.billing_service.service.BillingService;
+import com.liberty.billing_service.service.TransferService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,16 +19,16 @@ import java.util.List;
 @RequestMapping("/api/v1/billing")
 public class BillController {
     private final BillingService billingService;
+    private final TransferService transferService;
 
     @PostMapping("/pay")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<Payment> postBill(@RequestBody Payment payment) {
         return ResponseEntity.ok(billingService.submitPayment(payment));
     }
-    @PostMapping("/transfer")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public ResponseEntity<TransferDto> transfers(TransferDto transferDto) {
-        return ResponseEntity.ok(billingService.transfers(transferDto));
+    @PostMapping("transfer/{clientId}")
+    public ApiResponse<?> transferFunds(@PathVariable String clientId, @RequestBody TransferRequest transferRequest) {
+        return transferService.transferFunds(clientId, transferRequest);
     }
 
     @GetMapping("/getBillers")
@@ -46,5 +47,10 @@ public class BillController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<List<BillCategory>> getCategories() {
         return ResponseEntity.ok(billingService.getCategories());
+    }
+    @GetMapping("/bankList")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<List<Bank>> getBank() {
+        return ResponseEntity.ok(billingService.getBank());
     }
 }

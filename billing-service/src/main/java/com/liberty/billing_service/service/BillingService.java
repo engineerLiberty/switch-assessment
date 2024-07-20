@@ -16,6 +16,6 @@ public interface BillingService {
      TransferDto transfers(TransferDto transferDto);
      Payment submitPayment(Payment payment);
      List<BillCategory> getCategories();
-     public List<Bank> getBank();
+      List<Bank> getBank();
 
 }
